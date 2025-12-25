@@ -28,9 +28,7 @@ pub fn get_init_context(
     ffmpeg::init()?;
     // Suppress noisy libav* warnings (e.g. swscaler/filtergraph warnings) by default.
     // Keep errors visible.
-    unsafe {
-        av_log_set_level(AV_LOG_ERROR);
-    }
+    ffmpeg::util::log::set_level(ffmpeg::util::log::Level::Error);
 
     // Open the input file
     let ictx = input(&input_file)?;
@@ -62,8 +60,9 @@ fn setup_decoder_context(
     context.set_threading(threading::Config {
         kind: threading::Type::Frame,
         count: threads,
-        #[cfg(feature = "ffmpeg_5")]
-        safe: true,
+        // Keep this compatible across ffmpeg-next versions where `threading::Config`
+        // may have additional fields (e.g. `safe`).
+        ..Default::default()
     });
     Ok((context, hwaccel_context))
 }
@@ -739,9 +738,7 @@ mod tests {
     fn test_setup_decoder_context_no_hwaccel() {
         let path = Path::new(TEST_VIDEO);
         ffmpeg::init().unwrap();
-        unsafe {
-            av_log_set_level(AV_LOG_ERROR);
-        }
+        ffmpeg::util::log::set_level(ffmpeg::util::log::Level::Error);
         let ictx = input(&path).unwrap();
         let stream = ictx
             .streams()
