@@ -26,6 +26,11 @@ pub fn get_init_context(
 
     // Initialize the FFmpeg library
     ffmpeg::init()?;
+    // Suppress noisy libav* warnings (e.g. swscaler/filtergraph warnings) by default.
+    // Keep errors visible.
+    unsafe {
+        av_log_set_level(AV_LOG_ERROR);
+    }
 
     // Open the input file
     let ictx = input(&input_file)?;
@@ -734,6 +739,9 @@ mod tests {
     fn test_setup_decoder_context_no_hwaccel() {
         let path = Path::new(TEST_VIDEO);
         ffmpeg::init().unwrap();
+        unsafe {
+            av_log_set_level(AV_LOG_ERROR);
+        }
         let ictx = input(&path).unwrap();
         let stream = ictx
             .streams()
